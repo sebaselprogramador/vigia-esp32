@@ -13,10 +13,13 @@ Se creó en una carpeta independiente para no alterar el prototipo SmartCampus.
 - Conector de solo lectura a Firebase Realtime Database y sesión por correo/contraseña.
 - Si no llega una lectura reciente en 15 segundos, muestra estado desconocido.
 
-**Tu firmware actual no envía a Firebase.** Aún hay que añadir Wi-Fi, autenticación,
-envío de lecturas, muestras y episodios. La web no inventa historial a partir de
-las visitas: los datos reales deben ser escritos por el ESP32. No se probaron
-credenciales ni un dispositivo real; `config.js` está vacío deliberadamente.
+**El envío se realiza por USB a través de la computadora, sin Wi-Fi en el ESP32.**
+El puente en `bridge/` entiende la salida del sketch compartido, envía lecturas
+y guarda muestras/episodios en Firebase. Consulta `bridge/README.md` o descarga
+`vigia-puente-usb.zip` del repositorio. El monitor serie de Arduino IDE debe estar
+cerrado mientras se ejecuta el puente. La web no genera historial por las visitas.
+La configuración pública de Firebase ya está incorporada; faltan Authentication,
+los UID y reglas del proyecto para probar el circuito real.
 Las alarmas aparecen en el panel; no hay SMS, correo ni notificaciones con el navegador cerrado.
 
 ## Ver la web localmente
@@ -37,7 +40,7 @@ La dirección local es solo para esta computadora. Para otros dispositivos usa G
 2. Añade una aplicación web y copia su objeto `firebaseConfig` a `config.js`.
 3. Crea **Realtime Database**, no Firestore. Copia su URL exacta a `databaseURL`.
 4. En Authentication > Sign-in method activa correo/contraseña.
-5. En Authentication > Users crea dos usuarios separados: uno para el ESP32 y
+5. En Authentication > Users crea dos usuarios separados: uno para el puente USB y
    otro para el visor web. Usa contraseñas distintas. Anota sus UID.
 6. En `database.rules.json`, sustituye `REEMPLAZAR_UID_ESP32` y
    `REEMPLAZAR_UID_VISOR`. Publica esas reglas en Realtime Database > Rules.
@@ -54,7 +57,7 @@ ESP32, el Wi-Fi o claves de cuentas de servicio al repositorio. El usuario visor
 puede leer solo este dispositivo y no puede escribir. Las reglas son la barrera
 de acceso; ocultar botones no proporciona seguridad.
 
-## Contrato de datos para actualizar Arduino
+## Contrato de datos usado por el puente USB
 
 Ruta base: `devices/esp32-01`. Números JSON, no cadenas. Horas Unix en
 **milisegundos**. Sincroniza el reloj o usa timestamp de servidor de Firebase.
@@ -94,8 +97,8 @@ Al finalizar, añade `endedAt`; mientras está activo, omítelo o usa `null`.
 }
 ```
 
-Envía también una muestra en cada cambio de alarma para registrar transiciones.
-Los máximos de los episodios deben calcularse con las lecturas locales de 1 segundo,
+El puente envía también una muestra en cada cambio de alarma para registrar transiciones.
+Los máximos de los episodios se calculan con las lecturas por USB de 1 segundo,
 no solo con las muestras históricas de 30 segundos. La gráfica puede perder
 picos entre muestras; la tabla conserva el máximo que reportó el dispositivo.
 Las muestras tienen solo tres campos; las reglas rechazan otros campos.
@@ -109,10 +112,9 @@ gasRaw >= 2200 || temperatureC >= 47.5
 La web conserva los umbrales del código recibido. Si cambias umbrales en Arduino,
 cambia también `model.js` y las etiquetas de `index.html`. Los estados de bombas
 son reportes de salida del ESP32; no hay sensor de confirmación de flujo.
-La integración de red debe ejecutarse fuera del ciclo de control local para que
-las esperas HTTP no retrasen sensores y actuadores. Define también almacenamiento
-local/reintentos si necesitas conservar historial durante cortes de Internet;
-esta web no recupera lecturas que el dispositivo nunca guardó.
+El envío de red ocurre en la computadora, fuera del control local del ESP32.
+El puente guarda una cola SQLite durante cortes de Internet. No puede recuperar
+lecturas durante períodos en que el USB está desconectado o el puente está cerrado.
 
 ## Historial y límites
 
