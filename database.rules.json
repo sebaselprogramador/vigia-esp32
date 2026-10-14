@@ -1,0 +1,46 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "devices": {
+      "esp32-01": {
+        ".read": "auth != null && (auth.uid === 'REEMPLAZAR_UID_VISOR' || auth.uid === 'REEMPLAZAR_UID_ESP32')",
+        ".write": "auth != null && auth.uid === 'REEMPLAZAR_UID_ESP32'",
+        "current": {
+          ".validate": "newData.hasChildren(['temperatureC','gasRaw','timestamp','alarm','buzzer','pump1','pump2'])",
+          "temperatureC": { ".validate": "newData.isNumber() && newData.val() >= -55 && newData.val() <= 150" },
+          "gasRaw": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4095 && newData.val() % 1 === 0" },
+          "timestamp": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now + 60000" },
+          "alarm": { ".validate": "newData.isBoolean()" },
+          "buzzer": { ".validate": "newData.isBoolean()" },
+          "pump1": { ".validate": "newData.isBoolean()" },
+          "pump2": { ".validate": "newData.isBoolean()" },
+          "$other": { ".validate": false }
+        },
+        "samples": {
+          ".indexOn": ["timestamp"],
+          "$sample": {
+            ".validate": "newData.hasChildren(['temperatureC','gasRaw','timestamp'])",
+            "temperatureC": { ".validate": "newData.isNumber() && newData.val() >= -55 && newData.val() <= 150" },
+            "gasRaw": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4095 && newData.val() % 1 === 0" },
+            "timestamp": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now + 60000" },
+            "$other": { ".validate": false }
+          }
+        },
+        "events": {
+          ".indexOn": ["startedAt"],
+          "$event": {
+            ".validate": "newData.hasChildren(['startedAt','reason','peakTemperatureC','peakGasRaw']) && (!newData.child('endedAt').exists() || newData.child('endedAt').val() >= newData.child('startedAt').val())",
+            "startedAt": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now + 60000" },
+            "endedAt": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now + 60000" },
+            "reason": { ".validate": "newData.val() === 'gas' || newData.val() === 'temperature' || newData.val() === 'both'" },
+            "peakTemperatureC": { ".validate": "newData.isNumber() && newData.val() >= -55 && newData.val() <= 150" },
+            "peakGasRaw": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4095 && newData.val() % 1 === 0" },
+            "$other": { ".validate": false }
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

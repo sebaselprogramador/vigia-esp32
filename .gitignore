@@ -1,0 +1,7 @@
+node_modules/
+.env
+.env.*
+*.local.*
+secrets.h
+credentials.json
+*service-account*.json
