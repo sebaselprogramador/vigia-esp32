@@ -20,6 +20,9 @@ su README. Arduino IDE carga el sketch; después el ESP32 funciona por su cuenta
 alimentado por USB u otra fuente adecuada. No necesita el puente Python ni una
 computadora encendida. El monitor serie puede permanecer abierto para diagnóstico.
 El puente `vigia-puente-usb.zip` queda como alternativa anterior, no se requiere.
+El paquete Wi-Fi incorpora la calibración LM35 del usuario: promedio de 50
+lecturas en milivoltios, separadas por 5 ms, y `(promedio_mV - 78.05) / 8.627`.
+Lee el README del firmware para el intervalo de adquisición y sus límites.
 La configuración pública de Firebase ya está incorporada; faltan Authentication,
 los UID y reglas del proyecto para probar el circuito real.
 Las alarmas aparecen en el panel; no hay SMS, correo ni notificaciones con el navegador cerrado.
