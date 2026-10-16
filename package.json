@@ -1,1 +1,1 @@
-{"name":"vigia-esp32-monitor","private":true,"type":"module","scripts":{"start":"node server.mjs","test":"node --test model.test.js"}}
+{"name":"vigia-esp32-monitor","private":true,"type":"module","scripts":{"start":"node server.mjs","test":"node --experimental-vm-modules --test model.test.js app.test.js"}}

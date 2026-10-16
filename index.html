@@ -9,9 +9,8 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <header class="header"><a class="brand" href="./"><span class="brand-icon" aria-hidden="true">◉</span><span>Vigía<small>Monitor del prototipo ESP32</small></span></a><div class="header-actions"><span id="source-badge" class="badge">Demostración</span><button id="connect" class="button primary">Conectar Firebase</button><button id="logout" class="button" hidden>Cerrar sesión</button></div></header>
+  <header class="header"><a class="brand" href="./"><span class="brand-icon" aria-hidden="true">◉</span><span>Vigía<small>Monitor del prototipo ESP32</small></span></a><div class="header-actions"><span id="source-badge" class="badge">Sin sesión</span><button id="connect" class="button primary">Conectar Firebase</button><button id="logout" class="button" hidden>Cerrar sesión</button></div></header>
   <main>
-    <div id="demo-notice" class="notice">Estás viendo datos simulados. No representan las lecturas ni el estado de tus bombas. <button id="demo-scenario" class="text-button">Simular alerta</button></div>
     <div id="message" class="notice error" role="alert" hidden></div>
     <section class="page-heading"><div><h1>Estado del sistema</h1><p>Temperatura, señal del MQ-7 y respuesta de los aspersores.</p></div><span id="last-update" class="muted">Esperando datos</span></section>
     <section id="status-panel" class="status-panel" aria-live="polite"><span class="status-symbol" aria-hidden="true">●</span><div><h2 id="status-title">Esperando lectura</h2><p id="status-description">No hay información del dispositivo.</p></div><span id="connection" class="badge">Sin conexión</span></section>

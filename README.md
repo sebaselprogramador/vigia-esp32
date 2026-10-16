@@ -6,7 +6,7 @@ Se creó en una carpeta independiente para no alterar el prototipo SmartCampus.
 
 ## Qué funciona ahora
 
-- Demostración con lecturas simuladas, dos episodios históricos y simulación de alerta.
+- Solo lecturas reales de Firebase; sin datos inventados ni botones de simulación.
 - Indicadores de temperatura, MQ-7, buzzer y ambas bombas.
 - Gráfica por sensor con umbral, filtros de 1/6/24 horas y pico del período.
 - Historial de episodios con máximos, inicio/fin y descarga CSV.
@@ -32,7 +32,9 @@ npm start
 ```
 
 Abre http://127.0.0.1:4173. No abras index.html mediante file:// porque usa módulos.
-Para verificar el procesamiento de datos: `npm test`.
+Para verificar datos y comportamiento de la app: `npm test` (13 pruebas sin dependencias).
+Las pruebas usan módulos VM de Node con una bandera experimental; esa bandera no
+se utiliza en la web publicada. Firebase se simula únicamente dentro de las pruebas.
 La dirección local es solo para esta computadora. Para otros dispositivos usa GitHub Pages.
 
 ## Crear Firebase
@@ -126,7 +128,8 @@ por el período seleccionado; no descarga todo el historial. Si cada muestra
 se guarda cada 30 segundos, 1000 cubren unas 8 horas: el filtro de 24 horas
 mostrará solo lo disponible. Para 24 horas completas usa al menos 2880 muestras
 y ajusta la consulta, o implementa consultas por fecha/paginación.
-El CSV exporta los episodios cargados del período, con timestamp Unix en ms.
+El filtro incluye episodios que se solapan con el período, aunque empezaran antes.
+El CSV exporta esos episodios cargados, con timestamp Unix en ms.
 No hay borrado automático: la retención debe planificarse en Firebase.
 
 ## Publicar en GitHub Pages
@@ -144,8 +147,14 @@ Repositorio privado: https://github.com/sebaselprogramador/vigia-esp32.
 GitHub Pages desde un repositorio privado requiere un plan compatible (por
 ejemplo GitHub Pro). El sitio publicado suele ser público aunque el repositorio
 sea privado. No se ha publicado la web todavía.
-Los datos de demostración no se escriben en Firebase. Si la conexión real falla,
-la web conserva una advertencia y no sustituye lecturas reales por simuladas.
+Si la conexión falla, la web muestra una advertencia y conserva el último reporte
+como dato antiguo; nunca inventa lecturas. Al cerrar sesión borra los datos visibles.
+
+## Revisión de simplificación
+
+Consulta `REVISION_WEB.md` para los cambios, tecnologías, pruebas y límites de la
+revisión del 15 de octubre de 2026. El informe técnico anterior corresponde a su
+versión del 14 de octubre; sus números de línea no describen esta revisión.
 
 ## Referencias
 
