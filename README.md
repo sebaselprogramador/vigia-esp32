@@ -172,10 +172,10 @@ No hay borrado automático: la retención debe planificarse en Firebase.
 5. Esa misma dirección funciona en móviles, tablets y computadoras con
    Internet y un navegador moderno. No requiere instalar una aplicación.
 
-Repositorio privado: https://github.com/sebaselprogramador/vigia-esp32.
-GitHub Pages desde un repositorio privado requiere un plan compatible (por
-ejemplo GitHub Pro). El sitio publicado suele ser público aunque el repositorio
-sea privado. No se ha publicado la web todavía.
+Repositorio público desde el 16 de octubre de 2026:
+https://github.com/sebaselprogramador/vigia-esp32.
+El código y su historial son visibles para cualquiera. Hacer público el repositorio
+no publica automáticamente la web; GitHub Pages todavía necesita configurarse.
 Si la conexión falla, la web muestra una advertencia y conserva el último reporte
 como dato antiguo; nunca inventa lecturas. Al cerrar sesión borra los datos visibles.
 
