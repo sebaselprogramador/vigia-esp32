@@ -1,5 +1,5 @@
 import { firebaseConfig, deviceId, staleAfterMs } from './config.js';
-import { thresholds, validReading, validEvent, records, inRange, eventsInRange, reason, toCsv } from './model.js';
+import { thresholds, validReading, validEvent, records, inRange, eventsInRange, reason } from './model.js';
 
 const $ = id => document.getElementById(id);
 const number = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
@@ -70,10 +70,6 @@ $('sound-enable').addEventListener('click', async () => {
 $('sound-mute').addEventListener('click', () => { alarmMuted = true; renderSound(); });
 
 function message(text = '') { $('message').textContent = text; $('message').hidden = !text; }
-function activeLabel(id, value) {
-  $(id).textContent = typeof value === 'boolean' ? value ? 'Encendido' : 'Apagado' : 'Sin reporte';
-  $(id).classList.toggle('active', value === true);
-}
 function renderCurrent() {
   const valid = validReading(current);
   const recent = valid && Date.now() - current.timestamp <= staleAfterMs && current.timestamp <= Date.now() + 60000;
@@ -99,7 +95,6 @@ function renderCurrent() {
   $('gas-meter').style.width = valid ? current.gasRaw / 4095 * 100 + '%' : '0';
   $('temp-state').textContent = valid ? current.temperatureC >= thresholds.temperatureC ? 'Sobre el umbral' : 'Bajo el umbral' : 'Sin lectura';
   $('gas-state').textContent = valid ? current.gasRaw >= thresholds.gasRaw ? 'Sobre el umbral' : 'Bajo el umbral' : 'Sin lectura';
-  activeLabel('buzzer', current?.buzzer); activeLabel('pump1', current?.pump1); activeLabel('pump2', current?.pump2);
 }
 function renderChart() {
   const hours = Number($('range').value), rows = inRange(samples, hours);
@@ -131,7 +126,7 @@ function renderChart() {
 }
 function visibleEvents() { return eventsInRange(events, Number($('range').value)); }
 function renderEvents() {
-  const rows = visibleEvents(); $('events').replaceChildren(); $('export').disabled = !rows.length;
+  const rows = visibleEvents(); $('events').replaceChildren();
   // Los datos pasan por validEvent; cada celda usa textContent, nunca HTML remoto.
   for (const event of rows) {
     const tr = document.createElement('tr');
@@ -203,10 +198,6 @@ $('range').addEventListener('change', () => { renderChart(); renderEvents(); });
 document.querySelectorAll('[data-sensor]').forEach(button => button.addEventListener('click', () => {
   sensor = button.dataset.sensor; document.querySelectorAll('[data-sensor]').forEach(b => b.setAttribute('aria-pressed', String(b === button))); renderChart();
 }));
-$('export').addEventListener('click', () => {
-  const blob = new Blob([toCsv(visibleEvents())], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = `alertas-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-});
 new ResizeObserver(() => renderChart()).observe($('chart'));
 setInterval(() => { if (signedIn) render(); }, 5000);
 render();

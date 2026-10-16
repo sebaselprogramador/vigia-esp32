@@ -26,8 +26,3 @@ export function eventsInRange(rows, hours, now = Date.now()) {
   return rows.filter(row => validEvent(row) && row.startedAt <= now + 60000
     && (row.endedAt ?? now) >= now - hours * 3600000).sort((a, b) => b.startedAt - a.startedAt);
 }
-export function toCsv(rows) {
-  const fields = ["startedAt", "reason", "peakTemperatureC", "peakGasRaw", "endedAt"];
-  const cell = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
-  return "\uFEFF" + fields.join(",") + "\r\n" + rows.map(r => fields.map(f => cell(r[f])).join(",")).join("\r\n");
-}

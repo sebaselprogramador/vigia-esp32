@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validReading, validEvent, records, inRange, eventsInRange, reason, toCsv } from './model.js';
+import { validReading, validEvent, records, inRange, eventsInRange, reason } from './model.js';
 test('rejects missing readings, impossible ADC values and absent timestamps', () => {
   assert.equal(validReading(null), false);
   assert.equal(validReading({ temperatureC: 28, gasRaw: 4200, timestamp: 123 }), false);
@@ -12,12 +12,6 @@ test('sorts valid persisted samples and selects the requested time window', () =
   assert.deepEqual(rows.map(r => r.id), ['b', 'a']);
   assert.deepEqual(inRange(rows, 1, 5000000).map(r => r.id), ['a']);
 });
-test('CSV preserves commas and quotes and keeps open event endings empty', () => {
-  const csv = toCsv([{ startedAt: 123, reason: 'MQ-7, "alto"', peakTemperatureC: 50.1, peakGasRaw: 2500, endedAt: null }]);
-  assert.ok(csv.startsWith('\uFEFFstartedAt,reason,peakTemperatureC,peakGasRaw,endedAt\r\n'));
-  assert.ok(csv.includes('"123","MQ-7, ""alto""","50.1","2500",""'));
-});
-
 test('rejects readings with non-numeric, non-finite or out-of-range values', () => {
   const good = { temperatureC: 28, gasRaw: 900, timestamp: 1000 };
   for (const invalid of [{ temperatureC: '28' }, { temperatureC: Infinity }, { gasRaw: 1.2 }, { gasRaw: -1 }, { timestamp: NaN }]) {

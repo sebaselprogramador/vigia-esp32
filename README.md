@@ -7,9 +7,9 @@ Se creó en una carpeta independiente para no alterar el prototipo SmartCampus.
 ## Qué funciona ahora
 
 - Solo lecturas reales de Firebase; sin datos inventados ni botones de simulación.
-- Indicadores de temperatura, MQ-7, buzzer y ambas bombas.
+- Indicadores de temperatura y MQ-7.
 - Gráfica por sensor con umbral, filtros de 1/6/24 horas y pico del período.
-- Historial de episodios con máximos, inicio/fin y descarga CSV.
+- Historial de episodios con máximos, inicio/fin .
 - Conector de solo lectura a Firebase Realtime Database y sesión por correo/contraseña.
 - Si no llega una lectura reciente en 15 segundos, muestra estado desconocido.
 - Aviso sonoro opcional con sirena y botón para silenciar el episodio actual.
@@ -33,7 +33,7 @@ npm start
 ```
 
 Abre http://127.0.0.1:4173. No abras index.html mediante file:// porque usa módulos.
-Para verificar datos y comportamiento de la app: `npm test` (16 pruebas sin dependencias).
+Para verificar datos y comportamiento de la app: `npm test` (15 pruebas sin dependencias).
 Las pruebas usan módulos VM de Node con una bandera experimental; esa bandera no
 se utiliza en la web publicada. Firebase se simula únicamente dentro de las pruebas.
 La dirección local es solo para esta computadora. Para otros dispositivos usa GitHub Pages.
@@ -155,7 +155,7 @@ se guarda cada 30 segundos, 1000 cubren unas 8 horas: el filtro de 24 horas
 mostrará solo lo disponible. Para 24 horas completas usa al menos 2880 muestras
 y ajusta la consulta, o implementa consultas por fecha/paginación.
 El filtro incluye episodios que se solapan con el período, aunque empezaran antes.
-El CSV exporta esos episodios cargados, con timestamp Unix en ms.
+Los episodios muestran los datos cargados del período.
 No hay borrado automático: la retención debe planificarse en Firebase.
 
 ## Publicar en GitHub Pages
@@ -189,3 +189,7 @@ versión del 14 de octubre; sus números de línea no describen esta revisión.
 - Historial: https://firebase.google.com/docs/database/web/lists-of-data
 - Autenticación: https://firebase.google.com/docs/auth/web/password-auth
 - GitHub Pages: https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site
+
+Actualización del 16 de octubre: retirados la tarjeta de buzzer/bombas y el CSV
+a petición del usuario. El control de salidas continúa en el firmware; el historial
+y la sirena web se conservan. REVISION_WEB.md describe una versión anterior.

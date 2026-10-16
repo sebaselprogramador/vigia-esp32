@@ -107,7 +107,7 @@ test('starts empty and never fabricates readings without a session', async () =>
   assert.equal(app.elements.get('temperature').textContent, '—');
 });
 
-test('reads Firebase, draws both sensors, retains overlapping alarms and exports CSV', async () => {
+test('reads Firebase, draws both sensors, retains overlapping alarms without removed controls', async () => {
   const app = await openApp(), now = app.clock.now;
   app.login();
   const row = { temperatureC: 51.2, gasRaw: 2500, timestamp: now, alarm: true, buzzer: true, pump1: true, pump2: true };
@@ -116,17 +116,15 @@ test('reads Firebase, draws both sensors, retains overlapping alarms and exports
   app.push('devices/esp32-01/events', { active: { startedAt: now - 7_200_000, reason: 'both', peakTemperatureC: 51.2, peakGasRaw: 2500 } });
   const ui = app.elements;
   assert.equal(ui.get('status-title').textContent, 'Alerta del dispositivo');
-  assert.equal(ui.get('pump1').textContent, 'Encendido');
+  assert.equal(ui.has('pump1'), false);
+  assert.equal(ui.has('export'), false);
   assert.match(ui.get('chart').innerHTML, /<svg.*<circle/);
   assert.equal(app.listeners.get('devices/esp32-01/samples').filters[1].limit, 1000);
   await app.buttons[1].fire('click');
   assert.match(ui.get('peak').textContent, /2500 ADC/);
   ui.get('range').value = '1'; await ui.get('range').fire('change');
   assert.match(ui.get('events-count').textContent, /^1 episodios/);
-  assert.equal(ui.get('export').disabled, false);
-  await ui.get('export').fire('click');
-  assert.match(await app.csv.text(), /"both","51.2","2500",""/);
-  assert.equal(app.downloads.length, 1);
+
 });
 
 test('stale readings and revoked permission cannot appear as normal', async () => {
