@@ -12,6 +12,7 @@ Se creó en una carpeta independiente para no alterar el prototipo SmartCampus.
 - Historial de episodios con máximos, inicio/fin y descarga CSV.
 - Conector de solo lectura a Firebase Realtime Database y sesión por correo/contraseña.
 - Si no llega una lectura reciente en 15 segundos, muestra estado desconocido.
+- Aviso sonoro opcional con sirena y botón para silenciar el episodio actual.
 
 **El envío actual es directo: ESP32 -> Wi-Fi -> Firebase -> web.**
 El firmware está en `firmware/`; en GitHub descarga `vigia-esp32-wifi.zip` y lee
@@ -32,7 +33,7 @@ npm start
 ```
 
 Abre http://127.0.0.1:4173. No abras index.html mediante file:// porque usa módulos.
-Para verificar datos y comportamiento de la app: `npm test` (13 pruebas sin dependencias).
+Para verificar datos y comportamiento de la app: `npm test` (16 pruebas sin dependencias).
 Las pruebas usan módulos VM de Node con una bandera experimental; esa bandera no
 se utiliza en la web publicada. Firebase se simula únicamente dentro de las pruebas.
 La dirección local es solo para esta computadora. Para otros dispositivos usa GitHub Pages.
@@ -59,6 +60,31 @@ La configuración web de Firebase es pública. Nunca subas las contraseñas del
 ESP32, el Wi-Fi o claves de cuentas de servicio al repositorio. El usuario visor
 puede leer solo este dispositivo y no puede escribir. Las reglas son la barrera
 de acceso; ocultar botones no proporciona seguridad.
+
+## Aviso sonoro en la web
+
+Pulsa **Activar y probar sonido** en cada página abierta: reproduce un tono breve
+para comprobar volumen y autoriza el audio del navegador. Luego, una alarma
+`current.alarm === true` válida, conectada y reciente inicia una sirena continua
+de tono variable mediante Web Audio API, sin archivos de audio ni dependencias.
+La sirena se detiene con un reporte reciente sin alarma, al cerrar sesión, al
+desactivar el sonido o al pulsar **Silenciar esta alerta**. Este último botón solo
+silencia el episodio actual; tras un reporte sin alarma, la siguiente vuelve a sonar.
+Si se pierde la conexión durante una alarma, el aviso queda activo hasta una de
+esas acciones: perder lecturas no confirma que el peligro haya terminado. El título
+de la pestaña también indica ALERTA. No se modifica el buzzer ni las bombas del ESP32.
+
+El volumen del dispositivo debe estar audible. Recargar exige activar el sonido
+de nuevo. Con la página cerrada, el navegador suspendido o la pantalla bloqueada
+no se garantiza aviso; no se han implementado notificaciones push. Si se interrumpe
+el audio, la interfaz lo avisa y pide desactivarlo/activarlo de nuevo. Las llamadas
+o el ahorro de energía pueden afectar audio y conexión, según el dispositivo.
+
+Las tres pruebas añadidas el 16 de octubre cubren activación, silenciamiento por
+episodio, nueva alerta, desconexión, datos antiguos/inválidos, cierre de sesión,
+desactivación y bloqueo de audio. En navegador se verificó el control de activación
+y el estado de audio sin errores de consola; no se mide acústicamente el volumen.
+Referencia: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices
 
 ## Contrato de datos usado por el firmware Wi-Fi
 

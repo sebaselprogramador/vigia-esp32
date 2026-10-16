@@ -28,10 +28,24 @@ async function openApp() {
   elements.get('range').value = '24';
   const buttons = ['temperatureC', 'gasRaw'].map(sensor => Object.assign(new Element(), { dataset: { sensor } }));
   const control = { clock, elements, buttons, downloads, listeners, unsubscribed: 0 };
+  control.audioNodes = [];
+  class AudioNode {
+    constructor() { this.frequency = {}; this.gain = {}; this.started = false; this.stopped = false; control.audioNodes.push(this); }
+    connect() {}
+    disconnect() {}
+    start() { this.started = true; }
+    stop() { this.stopped = true; }
+  }
+  class AudioContext {
+    constructor() { this.state = 'suspended'; this.currentTime = 0; this.destination = {}; control.audio = this; }
+    async resume() { if (control.audioBlocked) throw new Error('blocked'); this.state = 'running'; }
+    createOscillator() { return new AudioNode(); }
+    createGain() { return new AudioNode(); }
+  }
   const context = createContext({
     document: { getElementById: id => elements.get(id), createElement: () => new Element(), querySelectorAll: () => buttons },
     Date: class extends Date { static now() { return clock.now; } },
-    Intl, Blob, console,
+    Intl, Blob, console, AudioContext,
     URL: { createObjectURL: blob => { control.csv = blob; return 'blob:test'; }, revokeObjectURL() {} },
     ResizeObserver: class { observe() {} },
     setInterval: handle => intervals.push(handle), setTimeout: handle => handle()
@@ -137,4 +151,50 @@ test('invalid data are rejected and logout clears readings and all subscriptions
   assert.equal(app.elements.get('source-badge').textContent, 'Sin sesión');
   assert.equal(app.elements.get('temperature').textContent, '—');
   assert.equal(app.elements.get('logout').hidden, true);
+});
+
+test('sound requires activation, survives connection loss, mutes only the current episode and stops on clear/logout', async () => {
+  const app = await openApp(); app.login();
+  const report = alarm => app.push('devices/esp32-01/current', { temperatureC: alarm ? 51 : 28, gasRaw: 900, timestamp: app.clock.now, alarm });
+  report(true);
+  assert.equal(app.audioNodes.length, 0, 'No audio before user interaction');
+  await app.elements.get('sound-enable').fire('click');
+  const activeTones = () => app.audioNodes.filter(node => node.started && !node.stopped);
+  assert.equal(activeTones().length, 2, 'Carrier and modulation oscillators are active');
+  report(true); app.tick(); assert.equal(activeTones().length, 2, 'No duplicate sirens');
+  app.push('.info/connected', false); app.clock.now += 16000; app.tick();
+  assert.equal(activeTones().length, 2, 'Loss of updates must not imply danger ended');
+  await app.elements.get('sound-mute').fire('click');
+  assert.equal(activeTones().length, 0);
+  app.push('.info/connected', true); report(true);
+  assert.equal(activeTones().length, 0, 'Same episode remains muted');
+  report(false); report(true);
+  assert.equal(activeTones().length, 2, 'A new episode sounds again');
+  report(false); assert.equal(activeTones().length, 0);
+  report(true); await app.elements.get('logout').fire('click');
+  assert.equal(activeTones().length, 0);
+});
+
+test('old or invalid alerts cannot start sound and disabling sound stops immediately', async () => {
+  const app = await openApp(); app.login();
+  await app.elements.get('sound-enable').fire('click');
+  const report = { temperatureC: 51, gasRaw: 900, timestamp: app.clock.now - 16000, alarm: true };
+  app.push('devices/esp32-01/current', report);
+  const activeTones = () => app.audioNodes.filter(node => node.started && !node.stopped);
+  assert.equal(activeTones().length, 0);
+  app.push('devices/esp32-01/current', { ...report, timestamp: app.clock.now, temperatureC: 'bad' });
+  assert.equal(activeTones().length, 0);
+  app.push('devices/esp32-01/current', { ...report, timestamp: app.clock.now });
+  assert.equal(activeTones().length, 2);
+  await app.elements.get('sound-enable').fire('click');
+  assert.equal(activeTones().length, 0);
+  assert.equal(app.elements.get('sound-enable').attributes['aria-pressed'], 'false');
+});
+
+test('blocked browser audio reports failure without claiming sound is enabled', async () => {
+  const app = await openApp(); app.audioBlocked = true;
+  await app.elements.get('sound-enable').fire('click');
+  assert.equal(app.elements.get('sound-enable').attributes['aria-pressed'], 'false');
+  assert.match(app.elements.get('sound-status').textContent, /No se pudo activar/);
+  assert.equal(app.elements.get('sound-enable').disabled, false);
 });

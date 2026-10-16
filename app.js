@@ -6,6 +6,68 @@ const number = new Intl.NumberFormat('es', { maximumFractionDigits: 1 });
 const date = ms => Number.isFinite(ms) && ms > 0 ? new Date(ms).toLocaleString('es', { dateStyle: 'short', timeStyle: 'medium' }) : '—';
 let signedIn = false, current = null, samples = [], events = [], sensor = 'temperatureC', connected = false;
 let auth, authApi, firebasePromise, unsubscribe = [];
+let audioContext, soundEnabled = false, alarmLatched = false, alarmMuted = false, siren = null;
+
+function stopSiren() {
+  if (!siren) return;
+  siren.forEach(node => { if (typeof node.stop === 'function') node.stop(); node.disconnect(); });
+  siren = null;
+}
+function startSiren() {
+  if (siren || !soundEnabled || alarmMuted || !alarmLatched || audioContext?.state !== 'running') return;
+  const tone = audioContext.createOscillator(), sweep = audioContext.createOscillator();
+  const modulation = audioContext.createGain(), volume = audioContext.createGain();
+  tone.type = 'triangle'; tone.frequency.value = 880;
+  sweep.frequency.value = 2; modulation.gain.value = 220; volume.gain.value = 0.12;
+  sweep.connect(modulation); modulation.connect(tone.frequency);
+  tone.connect(volume); volume.connect(audioContext.destination);
+  tone.start(); sweep.start(); siren = [tone, sweep, modulation, volume];
+}
+function renderSound() {
+  if (!soundEnabled || !alarmLatched || alarmMuted || audioContext?.state !== 'running') stopSiren();
+  else startSiren();
+  $('sound-enable').textContent = soundEnabled ? 'Desactivar sonido' : 'Activar y probar sonido';
+  $('sound-enable').setAttribute('aria-pressed', String(soundEnabled));
+  $('sound-mute').hidden = !alarmLatched;
+  $('sound-mute').disabled = alarmMuted;
+  $('sound-status').textContent = !soundEnabled ? 'Sonido desactivado. Actívalo para recibir avisos en esta página.'
+    : audioContext?.state !== 'running' ? 'Audio suspendido por el navegador. Desactiva y activa el sonido para reanudarlo.'
+    : alarmMuted ? 'Esta alerta está silenciada. Una nueva alerta volverá a sonar.'
+    : alarmLatched ? '¡ALERTA! Aviso sonoro activo. Si se pierde la conexión, continúa hasta recibir un reporte sin alarma o silenciarlo.'
+    : 'Sonido activado. Se avisará al recibir una alarma del ESP32.';
+  document.title = alarmLatched ? '¡ALERTA! · Vigía ESP32' : 'Vigía · Monitor ESP32';
+}
+function updateSound(recent, reportedAlarm) {
+  // Solo un reporte reciente y conectado puede confirmar el inicio o fin de alarma.
+  // Una desconexión no confirma que el peligro haya terminado.
+  if (!signedIn || connected && recent && reportedAlarm === false) {
+    alarmLatched = false; alarmMuted = false;
+  } else if (connected && recent && reportedAlarm === true) alarmLatched = true;
+  renderSound();
+}
+
+$('sound-enable').addEventListener('click', async () => {
+  if (soundEnabled) { soundEnabled = false; renderSound(); return; }
+  $('sound-enable').disabled = true;
+  try {
+    const Audio = globalThis.AudioContext || globalThis.webkitAudioContext;
+    if (!Audio) throw new Error('Este navegador no admite audio.');
+    audioContext ||= new Audio();
+    audioContext.onstatechange = renderSound;
+    await audioContext.resume();
+    if (audioContext.state !== 'running') throw new Error('El navegador bloqueó el audio.');
+    soundEnabled = true;
+    // Tono breve de comprobación; no crea lecturas ni alarmas simuladas.
+    const tone = audioContext.createOscillator(), volume = audioContext.createGain();
+    volume.gain.value = 0.08; tone.frequency.value = 660;
+    tone.connect(volume); volume.connect(audioContext.destination);
+    tone.onended = () => { tone.disconnect(); volume.disconnect(); };
+    tone.start(); tone.stop(audioContext.currentTime + 0.3);
+    renderSound();
+  } catch { soundEnabled = false; renderSound(); $('sound-status').textContent = 'No se pudo activar el sonido. Comprueba los permisos de audio del navegador y vuelve a intentarlo.'; }
+  finally { $('sound-enable').disabled = false; }
+});
+$('sound-mute').addEventListener('click', () => { alarmMuted = true; renderSound(); });
 
 function message(text = '') { $('message').textContent = text; $('message').hidden = !text; }
 function activeLabel(id, value) {
@@ -17,6 +79,7 @@ function renderCurrent() {
   const recent = valid && Date.now() - current.timestamp <= staleAfterMs && current.timestamp <= Date.now() + 60000;
   const stale = signedIn && (!connected || !recent);
   const reportedAlarm = valid && typeof current.alarm === 'boolean' ? current.alarm : null;
+  updateSound(recent, reportedAlarm);
   $('source-badge').textContent = signedIn ? 'Firebase' : 'Sin sesión';
   $('connect').hidden = signedIn; $('logout').hidden = !signedIn;
   $('last-update').textContent = valid ? 'Última lectura: ' + date(current.timestamp) : 'Esperando datos del ESP32';
